@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中国建设银行 ATM 仿真</title>
+  <style>
+    /* ===== 全局重置 & 字体 ===== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    }
+    body {
+      background: linear-gradient(145deg, #2b2b3a 0%, #1a1a26 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    /* ===== ATM 外壳 ===== */
+    .atm-machine {
+      background: #3d3d4e;
+      padding: 30px 30px 40px;
+      border-radius: 50px 50px 30px 30px;
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.8), inset 0 -6px 8px rgba(0, 0, 0, 0.6), inset 0 6px 8px rgba(255, 255, 255, 0.08);
+      border-bottom: 6px solid #2a2a38;
+      position: relative;
+    }
+    /* 顶部装饰条 */
+    .atm-machine::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, #f0c040, #f5e56b, #f0c040, transparent);
+      border-radius: 4px;
+      opacity: 0.7;
+    }
+
+    /* ===== 屏幕 ===== */
+    .screen {
+      width: 820px;
+      height: 560px;
+      background: #1e2a36;
+      border-radius: 28px;
+      box-shadow: inset 0 0 0 2px #5b6b7a, inset 0 0 20px rgba(0, 0, 0, 0.7);
+      padding: 20px 25px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 屏幕顶部品牌 */
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #e0e8f0;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #3d5466;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .brand .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand .logo .icon {
+      font-size: 28px;
+      filter: drop-shadow(0 0 4px #f5e56b);
+    }
+    .brand .logo span {
+      color: #f5e56b;
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .brand .timer {
+      color: #ff6b6b;
+      font-size: 18px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 14px;
+      border-radius: 20px;
+      border: 1px solid #ff6b6b66;
+    }
+
+    /* ===== 页面容器 ===== */
+    .page {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #4a6a7a #1e2a36;
+      padding: 6px 0;
+    }
+    .page.active {
+      display: flex;
+    }
+    .page::-webkit-scrollbar {
+      width: 4px;
+    }
+    .page::-webkit-scrollbar-track {
+      background: #1e2a36;
+    }
+    .page::-webkit-scrollbar-thumb {
+      background: #4a6a7a;
+      border-radius: 8px;
+    }
+
+    /* ===== 通用文字 ===== */
+    .title {
+      color: #eef4f8;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      letter-spacing: 1px;
+    }
+    .title .sub {
+      font-size: 16px;
+      font-weight: 400;
+      color: #b0c8d8;
+      margin-left: 10px;
+    }
+    .label {
+      color: #c8dce8;
+      font-size: 17px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .input-field {
+      background: #0f1a24;
+      border: 2px solid #3b5a6a;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 20px;
+      color: #f0f8ff;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .input-field:focus {
+      border-color: #f5e56b;
+      box-shadow: 0 0 12px #f5e56b44;
+    }
+    .input-field::placeholder {
+      color: #6a8a9a;
+      font-size: 16px;
+    }
+    .btn {
+      background: linear-gradient(145deg, #2f4a5a, #1d3342);
+      border: none;
+      border-radius: 16px;
+      padding: 12px 20px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #e8f0f8;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #0f1a24, 0 6px 12px rgba(0, 0, 0, 0.4);
+      transition: all 0.08s linear;
+      text-align: center;
+      min-width: 80px;
+      user-select: none;
+      letter-spacing: 0.5px;
+    }
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #0f1a24;
+    }
+    .btn-primary {
+      background: linear-gradient(145deg, #4a7a4a, #2d5a2d);
+      box-shadow: 0 4px 0 #1a3a1a;
+    }
+    .btn-primary:active {
+      box-shadow: 0 2px 0 #1a3a1a;
+    }
+    .btn-danger {
+      background: linear-gradient(145deg, #8a3a3a, #6a2a2a);
+      box-shadow: 0 4px 0 #3a1a1a;
+    }
+    .btn-danger:active {
+      box-shadow: 0 2px 0 #3a1a1a;
+    }
+    .btn-gold {
+      background: linear-gradient(145deg, #d4a030, #b8892a);
+      box-shadow: 0 4px 0 #7a5a1a;
+      color: #1a1a26;
+    }
+    .btn-gold:active {
+      box-shadow: 0 2px 0 #7a5a1a;
+    }
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 16px;
+      min-width: 60px;
+    }
+    .btn-block {
+      width: 100%;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 8px 0 12px;
+    }
+    .btn-group .btn {
+      flex: 1 0 auto;
+      min-width: 70px;
+    }
+
+    /* 信息框 */
+    .info-box {
+      background: #0f1a24cc;
+      border: 1px solid #3b5a6a;
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin: 8px 0 14px;
+      color: #d8e8f0;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+    .info-box strong {
+      color: #f5e56b;
+      font-weight: 600;
+    }
+    .error-msg {
+      color: #ff7a7a;
+      font-size: 16px;
+      margin-top: 6px;
+      min-height: 24px;
+      font-weight: 500;
+    }
+    .success-msg {
+      color: #7aff7a;
+    }
+
+    /* 表格 */
+    .table-wrap {
+      background: #0f1a24cc;
+      border-radius: 16px;
+      border: 1px solid #3b5a6a;
+      overflow: auto;
+      max-height: 260px;
+      margin: 8px 0 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      color: #d0e0ea;
+    }
+    th {
+      background: #1d3342;
+      color: #f5e56b;
+      padding: 10px 8px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-weight: 600;
+      border-bottom: 2px solid #3b5a6a;
+    }
+    td {
+      padding: 8px 6px;
+      text-align: center;
+      border-bottom: 1px solid #2a4050;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* 布局辅助 */
+    .flex-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-12 { margin-bottom: 12px; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .flex-1 { flex: 1; }
+    .w-full { width: 100%; }
+
+    /* 滚动条美化 */
+    .screen ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .screen ::-webkit-scrollbar-track {
+      background: #1e2a36;
+    }
+    .screen ::-webkit-scrollbar-thumb {
+      background: #4a6a7a;
+      border-radius: 8px;
+    }
+
+    /* 响应式 */
+    @media (max-width: 900px) {
+      .atm-machine {
+        padding: 15px;
+        border-radius: 30px;
+      }
+      .screen {
+        width: 100%;
+        height: 560px;
+        padding: 15px;
+      }
+      .btn {
+        font-size: 16px;
+        padding: 10px 14px;
+        min-width: 60px;
+      }
+    }
+    @media (max-width: 600px) {
+      .screen {
+        height: 520px;
+      }
+      .brand .logo span {
+        font-size: 16px;
+      }
+      .title {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="atm-machine">
+  <div class="screen">
+    <!-- 品牌栏 -->
+    <div class="brand">
+      <div class="logo">
+        <span class="icon">🏦</span>
+        <span>中国建设银行</span>
+        <span style="font-size:14px; color:#a0b8c8; font-weight:400;">ATM</span>
+      </div>
+      <div class="timer" id="timerDisplay">⏱ 60s</div>
+    </div>
+
+    <!-- ========== 登录页 ========== -->
+    <div id="page-login" class="page active">
+      <div class="title">欢迎使用<span class="sub">请插入您的银行卡</span></div>
+      <div style="margin-top:20px;">
+        <div class="label">卡号</div>
+        <input class="input-field" id="loginCard" type="text" placeholder="请输入卡号" value="656885452136697452">
+        <div class="label mt-12">密码</div>
+        <input class="input-field" id="loginPwd" type="password" placeholder="请输入6位密码" maxlength="6" value="123456">
+        <div id="loginError" class="error-msg"></div>
+        <button class="btn btn-primary btn-block mt-12" id="loginBtn">登 录</button>
+      </div>
+    </div>
+
+    <!-- ========== 主菜单 ========== -->
+    <div id="page-main" class="page">
+      <div class="title">主菜单 <span class="sub" id="welcomeUser"></span></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1; align-content:center; padding:10px 0;">
+        <button class="btn btn-gold" data-page="withdraw-type">🏧 取款</button>
+        <button class="btn btn-gold" data-page="deposit">💰 存款</button>
+        <button class="btn btn-gold" data-page="transfer-type">↗️ 转账</button>
+        <button class="btn btn-gold" data-page="balance">📊 查询余额</button>
+        <button class="btn btn-gold" data-page="history">📜 历史记录</button>
+        <button class="btn btn-danger" id="logoutBtn">🚪 退卡</button>
+      </div>
+    </div>
+
+    <!-- ========== 取款类型选择 ========== -->
+    <div id="page-withdraw-type" class="page">
+      <div class="title">取款方式</div>
+      <div style="display:flex; flex-direction:column; gap:20px; justify-content:center; flex:1; align-items:center;">
+        <button class="btn btn-primary" style="width:60%;" id="withdrawNormal">普通取款</button>
+        <button class="btn btn-primary" style="width:60%;" id="withdrawOverdraft">透支取款</button>
+        <button class="btn btn-sm" style="width:40%;" data-page="main">返回主菜单</button>
+        <div id="withdrawTypeError" class="error-msg"></div>
+      </div>
+    </div>
+
+    <!-- ========== 取款金额 ========== -->
+    <div id="page-withdraw" class="page">
+      <div class="title" id="withdrawTitle">取款</div>
+      <div class="label">选择或输入金额（100的倍数）</div>
+      <div class="btn-group">
+        <button class="btn btn-sm" data-amount="100">100</button>
+        <button class="btn btn-sm" data-amount="200">200</button>
+        <button class="btn btn-sm" data-amount="500">500</button>
+        <button class="btn btn-sm" data-amount="1000">1000</button>
+        <button class="btn btn-sm" data-amount="2000">2000</button>
+        <button class="btn btn-sm" data-amount="3000">3000</button>
+      </div>
+      <div class="flex-row gap-8">
+        <input class="input-field flex-1" id="withdrawAmount" type="number" placeholder="自定义金额" step="100" min="100">
+        <button class="btn btn-primary" id="withdrawConfirm">确认</button>
+      </div>
+      <div id="withdrawError" class="error-msg"></div>
+      <div style="margin-top:12px; display:flex; gap:12px;">
+        <button class="btn btn-sm" data-page="withdraw-type">返回</button>
+        <button class="btn btn-sm" data-page="main">主菜单</button>
+      </div>
+    </div>
+
+    <!-- ========== 存款 ========== -->
+    <div id="page-deposit" class="page">
+      <div class="title">存款</div>
+      <div class="label">请输入存款金额（100的倍数，单笔上限10,000）</div>
+      <div class="flex-row gap-8">
+        <input class="input-field flex-1" id="depositAmount" type="number" placeholder="输入金额" step="100" min="100">
+        <button class="btn btn-primary" id="depositConfirm">确认</button>
+      </div>
+      <div id="depositError" class="error-msg"></div>
+      <div style="margin-top:12px; display:flex; gap:12px;">
+        <button class="btn btn-sm" data-page="main">主菜单</button>
+      </div>
+    </div>
+
+    <!-- ========== 转账类型 ========== -->
+    <div id="page-transfer-type" class="page">
+      <div class="title">转账类型</div>
+      <div style="display:flex; flex-direction:column; gap:20px; justify-content:center; flex:1; align-items:center;">
+        <button class="btn btn-primary" style="width:60%;" id="transferSame">建行转建行</button>
+        <button class="btn btn-primary" style="width:60%;" id="transferCross">跨行转账</button>
+        <button class="btn btn-sm" style="width:40%;" data-page="main">返回主菜单</button>
+        <div id="transferTypeError" class="error-msg"></div>
+      </div>
+    </div>
+
+    <!-- ========== 转账 ========== -->
+    <div id="page-transfer" class="page">
+      <div class="title" id="transferTitle">转账</div>
+      <div class="label">目标卡号</div>
+      <input class="input-field" id="transferTarget" type="text" placeholder="请输入对方卡号">
+      <div class="label mt-8">转账金额</div>
+      <input class="input-field" id="transferAmount" type="number" placeholder="输入金额">
+      <div id="transferError" class="error-msg"></div>
+      <div style="margin-top:12px; display:flex; gap:12px;">
+        <button class="btn btn-primary" id="transferConfirm">确认转账</button>
+        <button class="btn btn-sm" data-page="transfer-type">返回</button>
+        <button class="btn btn-sm" data-page="main">主菜单</button>
+      </div>
+    </div>
+
+    <!-- ========== 查询余额 ========== -->
+    <div id="page-balance" class="page">
+      <div class="title">余额信息</div>
+      <div class="info-box" id="balanceInfo">
+        <div>余额：<strong id="balAmount">0.00</strong> 元</div>
+        <div>透支额度：<strong id="balOverdraft">0.00</strong> 元</div>
+        <div>今日可存款：<strong id="balDepositLimit">0.00</strong> 元</div>
+        <div>今日可取款：<strong id="balWithdrawLimit">0.00</strong> 元</div>
+        <div>今日可转账：<strong id="balTransferLimit">0.00</strong> 元</div>
+      </div>
+      <button class="btn btn-sm" data-page="main" style="align-self:flex-start;">返回主菜单</button>
+    </div>
+
+    <!-- ========== 历史记录 ========== -->
+    <div id="page-history" class="page">
+      <div class="title">交易历史</div>
+      <div class="flex-row gap-8 mb-8">
+        <button class="btn btn-sm" data-month="1">近1月</button>
+        <button class="btn btn-sm" data-month="3">近3月</button>
+        <button class="btn btn-sm" data-month="6">近6月</button>
+        <button class="btn btn-sm" data-month="all">全部</button>
+      </div>
+      <div class="table-wrap" id="historyTableWrap">
+        <table>
+          <thead><tr><th>日期</th><th>类型</th><th>金额</th><th>目标/来源</th><th>手续费</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm" data-page="main" style="align-self:flex-start; margin-top:8px;">返回主菜单</button>
+    </div>
+
+    <!-- ========== 消息提示（覆盖层） ========== -->
+    <div id="page-message" class="page" style="justify-content:center; align-items:center; background:rgba(0,0,0,0.7); position:absolute; top:0; left:0; right:0; bottom:0; border-radius:28px; padding:40px; z-index:10; display:none;">
+      <div style="background:#1e2a36; padding:30px 40px; border-radius:28px; border:2px solid #f5e56b; max-width:80%; text-align:center;">
+        <div id="msgIcon" style="font-size:60px; margin-bottom:10px;">✅</div>
+        <div id="msgTitle" style="font-size:28px; font-weight:700; color:#f5e56b;">操作成功</div>
+        <div id="msgBody" style="font-size:18px; color:#d0e8f0; margin:16px 0; line-height:1.6;"></div>
+        <div style="display:flex; gap:20px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="msgContinue">继续</button>
+          <button class="btn btn-sm" id="msgMain">主菜单</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen -->
+</div><!-- /atm-machine -->
+
+<script>
+  // ============================================================
+  // 数据模拟
+  // ============================================================
+  const appData = {
+    // 当前用户（登录后填充）
+    currentUser: null,
+    // 模拟账户数据（卡号, 密码, 余额, 透支额, 类型, 银行, 状态, 今日已用限额）
+    users: [
+      {
+        card: '656885452136697452',
+        password: '123456',
+        balance: 12850.00,
+        overdraft: 5000.00,      // 信用卡透支额度
+        type: '信用卡',           // 或 '储蓄卡'
+        bank: '建设银行',         // 或 '其他银行'
+        status: '正常',           // 正常/冻结/挂失/销户
+        dailyUsed: { withdraw: 0, deposit: 0, transfer: 0 },
+        limits: { withdraw: 20000, deposit: 40000, transfer: 50000 },
+        transactions: [
+          { date: '2026-07-15 10:23', type: '取款', amount: 500, target: '本卡', fee: 0 },
+          { date: '2026-07-14 16:45', type: '存款', amount: 2000, target: '本卡', fee: 0 },
+          { date: '2026-07-13 09:12', type: '转账转出', amount: 800, target: '6222****1234', fee: 0 },
+          { date: '2026-07-12 14:30', type: '转账转入', amount: 1500, target: '6568****7452', fee: 0 },
+          { date: '2026-07-11 11:20', type: '取款', amount: 200, target: '本卡', fee: 0 },
+          { date: '2026-07-10 08:50', type: '透支取款', amount: 1000, target: '本卡', fee: 0 },
+          { date: '2026-07-09 19:05', type: '存款', amount: 3000, target: '本卡', fee: 0 },
+          { date: '2026-07-08 12:00', type: '转账转出', amount: 2500, target: '9558****5678', fee: 25 },
+          { date: '2026-07-07 17:30', type: '取款', amount: 100, target: '本卡', fee: 0 },
+        ]
+      },
+      // 可添加其他用户用于测试转账目标
+      {
+        card: '6222020012345678',
+        password: '111111',
+        balance: 5000,
+        overdraft: 0,
+        type: '储蓄卡',
+        bank: '建设银行',
+        status: '正常',
+        dailyUsed: { withdraw: 0, deposit: 0, transfer: 0 },
+        limits: { withdraw: 20000, deposit: 40000, transfer: 50000 },
+        transactions: []
+      }
+    ]
+  };
+
+  // ============================================================
+  // 工具函数
+  // ============================================================
+  function formatDate(d) {
+    const dt = new Date(d);
+    return dt.toLocaleString('zh-CN', { hour12: false });
+  }
+  function formatMoney(v) { return v.toFixed(2); }
+
+  // 查找用户
+  function findUserByCard(card) {
+    return appData.users.find(u => u.card === card) || null;
+  }
+
+  // 生成交易记录（模拟）
+  function addTransaction(user, type, amount, target, fee = 0) {
+    const now = new Date();
+    const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0')
+                  + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    user.transactions.unshift({ date: dateStr, type, amount, target, fee });
+  }
+
+  // ============================================================
+  // 页面导航
+  // ============================================================
+  function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const el = document.getElementById(pageId);
+    if (el) el.classList.add('active');
+    // 隐藏消息覆盖层
+    document.getElementById('page-message').style.display = 'none';
+  }
+
+  // ============================================================
+  // 倒计时 (模拟)
+  // ============================================================
+  let timerInterval = null;
+  let timerSeconds = 60;
+  const timerDisplay = document.getElementById('timerDisplay');
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    timerSeconds = 60;
+    timerDisplay.textContent = '⏱ 60s';
+  }
+
+  function startTimer() {
+    resetTimer();
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      timerDisplay.textContent = '⏱ ' + timerSeconds + 's';
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        // 超时自动退卡
+        if (appData.currentUser) {
+          alert('操作超时，已自动退卡。');
+          logout();
+        }
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerDisplay.textContent = '⏱ 60s';
+  }
+
+  // ============================================================
+  // 登录 / 登出
+  // ============================================================
+  function login() {
+    const card = document.getElementById('loginCard').value.trim();
+    const pwd = document.getElementById('loginPwd').value.trim();
+    const err = document.getElementById('loginError');
+
+    if (!card || !pwd) { err.textContent = '请输入卡号和密码'; return; }
+    if (pwd.length !== 6 || !/^\d{6}$/.test(pwd)) { err.textContent = '密码必须为6位数字'; return; }
+
+    const user = findUserByCard(card);
+    if (!user) { err.textContent = '卡号不存在'; return; }
+    if (user.password !== pwd) { err.textContent = '密码错误'; return; }
+    if (user.status !== '正常' && user.status !== '冻结') {
+      err.textContent = '账户状态异常：' + user.status;
+      return;
+    }
+
+    // 登录成功
+    appData.currentUser = user;
+    err.textContent = '';
+    // 重置每日已用（简化：模拟新的一天重置，实际应判断日期，这里简单置零）
+    // 更好的做法：记录日期，但为了演示，每次登录重置（实际项目应判断）
+    user.dailyUsed = { withdraw: 0, deposit: 0, transfer: 0 };
+
+    // 更新主菜单欢迎
+    document.getElementById('welcomeUser').textContent = '卡号: ' + user.card.slice(0,4)+'****'+user.card.slice(-4);
+    showPage('page-main');
+    startTimer();
+
+    // 判断账户类型隐藏透支取款按钮（由显示逻辑控制）
+    // 将在进入withdraw-type时判断
+  }
+
+  function logout() {
+    stopTimer();
+    appData.currentUser = null;
+    document.getElementById('loginPwd').value = '';
+    document.getElementById('loginError').textContent = '';
+    showPage('page-login');
+    resetTimer();
+  }
+
+  // ============================================================
+  // 界面交互绑定
+  // ============================================================
+
+  // 登录按钮
+  document.getElementById('loginBtn').addEventListener('click', login);
+  document.getElementById('loginPwd').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+  document.getElementById('loginCard').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+  // 退卡
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  // 主菜单按钮跳转
+  document.querySelectorAll('[data-page]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const page = this.dataset.page;
+      if (page === 'main') {
+        if (!appData.currentUser) { logout(); return; }
+        showPage('page-main');
+        startTimer();
+      } else {
+        // 检查是否登录
+        if (!appData.currentUser) { logout(); return; }
+        showPage('page-' + page);
+        // 进入特定页面时重置计时器
+        startTimer();
+        // 页面特定初始化
+        if (page === 'withdraw-type') initWithdrawType();
+        else if (page === 'balance') updateBalance();
+        else if (page === 'history') loadHistory('1');
+        // 重置错误信息
+        document.querySelectorAll('.error-msg').forEach(el => el.textContent = '');
+      }
+    });
+  });
+
+  // ============================================================
+  // 取款类型
+  // ============================================================
+  function initWithdrawType() {
+    const user = appData.currentUser;
+    const btnOver = document.getElementById('withdrawOverdraft');
+    if (user.type === '信用卡') {
+      btnOver.style.display = 'inline-block';
+    } else {
+      btnOver.style.display = 'none';
+    }
+    document.getElementById('withdrawTypeError').textContent = '';
+  }
+
+  document.getElementById('withdrawNormal').addEventListener('click', function() {
+    if (!appData.currentUser) return;
+    // 判断今日限额
+    const user = appData.currentUser;
+    if (user.dailyUsed.withdraw >= user.limits.withdraw) {
+      document.getElementById('withdrawTypeError').textContent = '今日取款额度已用尽';
+      return;
+    }
+    // 进入取款页面，标记为普通取款
+    document.getElementById('withdrawTitle').textContent = '取款 (普通)';
+    document.getElementById('withdrawAmount').value = '';
+    document.getElementById('withdrawError').textContent = '';
+    document.getElementById('withdrawConfirm').dataset.mode = 'normal';
+    showPage('page-withdraw');
+    startTimer();
+  });
+
+  document.getElementById('withdrawOverdraft').addEventListener('click', function() {
+    if (!appData.currentUser) return;
+    const user = appData.currentUser;
+    if (user.type !== '信用卡') {
+      document.getElementById('withdrawTypeError').textContent = '只有信用卡支持透支取款';
+      return;
+    }
+    if (user.dailyUsed.withdraw >= user.limits.withdraw) {
+      document.getElementById('withdrawTypeError').textContent = '今日取款额度已用尽';
+      return;
+    }
+    document.getElementById('withdrawTitle').textContent = '透支取款';
+    document.getElementById('withdrawAmount').value = '';
+    document.getElementById('withdrawError').textContent = '';
+    document.getElementById('withdrawConfirm').dataset.mode = 'overdraft';
+    showPage('page-withdraw');
+    startTimer();
+  });
+
+  // ============================================================
+  // 取款确认
+  // ============================================================
+  document.getElementById('withdrawConfirm').addEventListener('click', function() {
+    const user = appData.currentUser;
+    if (!user) return;
+    const mode = this.dataset.mode; // 'normal' or 'overdraft'
+    const amountInput = document.getElementById('withdrawAmount');
+    let amount = parseFloat(amountInput.value);
+    const err = document.getElementById('withdrawError');
+    err.textContent = '';
+
+    if (isNaN(amount) || amount <= 0) { err.textContent = '请输入有效的正数金额'; return; }
+    if (amount % 100 !== 0) { err.textContent = '金额必须是100的倍数'; return; }
+    if (amount > 5000) { err.textContent = '单笔取款上限为5000元'; return; }
+
+    // 检查今日限额
+    if (user.dailyUsed.withdraw + amount > user.limits.withdraw) {
+      err.textContent = '今日取款额度不足（剩余' + (user.limits.withdraw - user.dailyUsed.withdraw) + '元）';
+      return;
+    }
+
+    if (mode === 'normal') {
+      // 普通取款：检查余额
+      if (user.balance < amount) {
+        err.textContent = '余额不足（余额：' + formatMoney(user.balance) + '元）';
+        return;
+      }
+      // 执行取款
+      user.balance -= amount;
+      user.dailyUsed.withdraw += amount;
+      addTransaction(user, '取款', amount, '本卡', 0);
+      showMessage('取款成功', '已取款 ' + formatMoney(amount) + ' 元，当前余额 ' + formatMoney(user.balance) + ' 元', '取款');
+    } else if (mode === 'overdraft') {
+      // 透支取款：检查透支额度
+      if (user.overdraft < amount) {
+        err.textContent = '透支额度不足（剩余透支额：' + formatMoney(user.overdraft) + '元）';
+        return;
+      }
+      user.overdraft -= amount;
+      user.dailyUsed.withdraw += amount;
+      addTransaction(user, '透支取款', amount, '本卡', 0);
+      showMessage('透支取款成功', '透支取款 ' + formatMoney(amount) + ' 元，剩余透支额度 ' + formatMoney(user.overdraft) + ' 元', '透支取款');
+    }
+    amountInput.value = '';
+  });
+
+  // 快速金额按钮
+  document.querySelectorAll('#page-withdraw .btn-group .btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.getElementById('withdrawAmount').value = this.dataset.amount;
+    });
+  });
+
+  // ============================================================
+  // 存款
+  // ============================================================
+  document.getElementById('depositConfirm').addEventListener('click', function() {
+    const user = appData.currentUser;
+    if (!user) return;
+    const amountInput = document.getElementById('depositAmount');
+    let amount = parseFloat(amountInput.value);
+    const err = document.getElementById('depositError');
+    err.textContent = '';
+
+    if (isNaN(amount) || amount <= 0) { err.textContent = '请输入有效的正数金额'; return; }
+    if (amount % 100 !== 0) { err.textContent = '金额必须是100的倍数'; return; }
+    if (amount > 10000) { err.textContent = '单笔存款上限为10000元'; return; }
+    if (user.dailyUsed.deposit + amount > user.limits.deposit) {
+      err.textContent = '今日存款额度不足（剩余' + (user.limits.deposit - user.dailyUsed.deposit) + '元）';
+      return;
+    }
+
+    // 执行存款
+    user.balance += amount;
+    user.dailyUsed.deposit += amount;
+    addTransaction(user, '存款', amount, '本卡', 0);
+    showMessage('存款成功', '存入 ' + formatMoney(amount) + ' 元，当前余额 ' + formatMoney(user.balance) + ' 元', '存款');
+    amountInput.value = '';
+  });
+
+  // ============================================================
+  // 转账类型
+  // ============================================================
+  document.getElementById('transferSame').addEventListener('click', function() {
+    if (!appData.currentUser) return;
+    document.getElementById('transferTitle').textContent = '建行转建行 (免手续费)';
+    document.getElementById('transferConfirm').dataset.mode = 'same';
+    document.getElementById('transferError').textContent = '';
+    document.getElementById('transferTarget').value = '';
+    document.getElementById('transferAmount').value = '';
+    showPage('page-transfer');
+    startTimer();
+  });
+
+  document.getElementById('transferCross').addEventListener('click', function() {
+    if (!appData.currentUser) return;
+    document.getElementById('transferTitle').textContent = '跨行转账 (手续费1%)';
+    document.getElementById('transferConfirm').dataset.mode = 'cross';
+    document.getElementById('transferError').textContent = '';
+    document.getElementById('transferTarget').value = '';
+    document.getElementById('transferAmount').value = '';
+    showPage('page-transfer');
+    startTimer();
+  });
+
+  // ============================================================
+  // 转账确认
+  // ============================================================
+  document.getElementById('transferConfirm').addEventListener('click', function() {
+    const user = appData.currentUser;
+    if (!user) return;
+    const mode = this.dataset.mode;
+    const targetCard = document.getElementById('transferTarget').value.trim();
+    const amountInput = document.getElementById('transferAmount');
+    let amount = parseFloat(amountInput.value);
+    const err = document.getElementById('transferError');
+    err.textContent = '';
+
+    if (!targetCard) { err.textContent = '请输入目标卡号'; return; }
+    if (targetCard === user.card) { err.textContent = '不能转给自己'; return; }
+    // 检查目标卡号是否存在（模拟）
+    const targetUser = findUserByCard(targetCard);
+    if (!targetUser) { err.textContent = '目标卡号不存在'; return; }
+
+    if (isNaN(amount) || amount <= 0) { err.textContent = '请输入有效的正数金额'; return; }
+
+    let fee = 0;
+    if (mode === 'cross') {
+      fee = Math.round(amount * 0.01 * 100) / 100; // 1%
+    }
+    const totalDeduct = amount + fee;
+
+    // 检查余额
+    if (user.balance < totalDeduct) {
+      err.textContent = '余额不足（需 ' + formatMoney(totalDeduct) + ' 元，余额 ' + formatMoney(user.balance) + ' 元）';
+      return;
+    }
+    // 检查今日转账限额
+    if (user.dailyUsed.transfer + amount > user.limits.transfer) {
+      err.textContent = '今日转账额度不足（剩余' + (user.limits.transfer - user.dailyUsed.transfer) + '元）';
+      return;
+    }
+
+    // 执行转账
+    user.balance -= totalDeduct;
+    user.dailyUsed.transfer += amount;
+    // 目标账户增加余额（模拟）
+    targetUser.balance += amount;
+    addTransaction(user, '转账转出', amount, targetCard, fee);
+    addTransaction(targetUser, '转账转入', amount, user.card, 0);
+    showMessage('转账成功', 
+      (mode === 'cross' ? '跨行转账 ' : '行内转账 ') + formatMoney(amount) + ' 元' + (fee>0 ? '，手续费 ' + formatMoney(fee) : '') + 
+      '<br>目标卡号：' + targetCard + '<br>当前余额：' + formatMoney(user.balance) + ' 元',
+      '转账'
+    );
+    amountInput.value = '';
+    document.getElementById('transferTarget').value = '';
+  });
+
+  // ============================================================
+  // 查询余额
+  // ============================================================
+  function updateBalance() {
+    const user = appData.currentUser;
+    if (!user) return;
+    document.getElementById('balAmount').textContent = formatMoney(user.balance);
+    document.getElementById('balOverdraft').textContent = formatMoney(user.overdraft);
+    document.getElementById('balDepositLimit').textContent = formatMoney(user.limits.deposit - user.dailyUsed.deposit);
+    document.getElementById('balWithdrawLimit').textContent = formatMoney(user.limits.withdraw - user.dailyUsed.withdraw);
+    document.getElementById('balTransferLimit').textContent = formatMoney(user.limits.transfer - user.dailyUsed.transfer);
+  }
+
+  // ============================================================
+  // 历史记录
+  // ============================================================
+  function loadHistory(month) {
+    const user = appData.currentUser;
+    if (!user) return;
+    const all = user.transactions;
+    let filtered = [];
+    if (month === 'all') {
+      filtered = all;
+    } else {
+      const now = new Date();
+      const cutoff = new Date();
+      cutoff.setMonth(now.getMonth() - parseInt(month));
+      const cutoffStr = cutoff.getFullYear() + '-' + String(cutoff.getMonth()+1).padStart(2,'0') + '-' + String(cutoff.getDate()).padStart(2,'0');
+      filtered = all.filter(t => t.date >= cutoffStr);
+    }
+    const tbody = document.getElementById('historyBody');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:#6a8a9a; padding:20px;">暂无记录</td></tr>';
+      return;
+    }
+    let html = '';
+    filtered.forEach(t => {
+      html += `<tr>
+        <td>${t.date}</td>
+        <td>${t.type}</td>
+        <td>${formatMoney(t.amount)}</td>
+        <td>${t.target}</td>
+        <td>${t.fee ? formatMoney(t.fee) : '0.00'}</td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // 历史月份按钮
+  document.querySelectorAll('#page-history .btn[data-month]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const month = this.dataset.month;
+      loadHistory(month);
+    });
+  });
+
+  // ============================================================
+  // 消息提示
+  // ============================================================
+  let msgCallback = null;
+
+  function showMessage(title, body, actionType) {
+    const overlay = document.getElementById('page-message');
+    document.getElementById('msgTitle').textContent = title;
+    document.getElementById('msgBody').innerHTML = body;
+    // 根据操作类型设置继续按钮行为
+    if (actionType === '取款' || actionType === '透支取款') {
+      msgCallback = 'withdraw';
+    } else if (actionType === '存款') {
+      msgCallback = 'deposit';
+    } else if (actionType === '转账') {
+      msgCallback = 'transfer';
+    } else {
+      msgCallback = 'main';
+    }
+    overlay.style.display = 'flex';
+    stopTimer(); // 暂停计时
+  }
+
+  document.getElementById('msgContinue').addEventListener('click', function() {
+    document.getElementById('page-message').style.display = 'none';
+    startTimer();
+    if (msgCallback === 'withdraw') {
+      showPage('page-withdraw-type');
+      initWithdrawType();
+    } else if (msgCallback === 'deposit') {
+      showPage('page-deposit');
+    } else if (msgCallback === 'transfer') {
+      showPage('page-transfer-type');
+    } else {
+      showPage('page-main');
+    }
+    msgCallback = null;
+  });
+
+  document.getElementById('msgMain').addEventListener('click', function() {
+    document.getElementById('page-message').style.display = 'none';
+    showPage('page-main');
+    startTimer();
+    msgCallback = null;
+  });
+
+  // ============================================================
+  // 初始化：默认显示登录页
+  // ============================================================
+  showPage('page-login');
+  resetTimer();
+
+  // 可选：进入页面重置错误
+  console.log('🏦 建设银行ATM仿真已启动');
+</script>
+</body>
+</html>
