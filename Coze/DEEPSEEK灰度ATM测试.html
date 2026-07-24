@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICBC 中国工商银行 - ATM自助服务终端</title>
+    <style>
+        :root {
+            --atm-body: #e8e0d8;
+            --atm-body-dark: #c8bfb4;
+            --atm-panel: #3a3a3e;
+            --atm-panel-light: #4e4e53;
+            --screen-bg: #f5f7fa;
+            --screen-header: #c41230;
+            --screen-text: #1a1a1a;
+            --screen-blue: #1a5fb4;
+            --btn-left: #5a5a60;
+            --btn-left-hover: #c41230;
+            --btn-right: #5a5a60;
+            --btn-right-hover: #c41230;
+            --keypad-bg: #3a3a3e;
+            --key-num: #e8e0d8;
+            --key-num-hover: #fff;
+            --key-func: #c41230;
+            --key-func-hover: #e04050;
+            --key-cancel: #d4a017;
+            --key-confirm: #2e8b57;
+            --screen-border: #2a2a2e;
+            --card-slot: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            background: radial-gradient(ellipse at center, #2a2a3e 0%, #0d0d18 100%);
+            padding: 10px;
+        }
+
+        /* 地面阴影 */
+        .floor-shadow {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 40px;
+            background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ATM 整体机身 */
+        .atm-machine {
+            position: relative;
+            z-index: 1;
+            width: 620px;
+            background: linear-gradient(180deg, #f0ece6 0%, #e2dbd0 15%, #d5cdc0 30%, #cbc3b6 60%, #bfb7aa 100%);
+            border-radius: 22px 22px 16px 16px;
+            box-shadow:
+                0 8px 40px rgba(0, 0, 0, 0.5),
+                0 2px 8px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+            border: 3px solid #b8afa3;
+            overflow: visible;
+        }
+
+        /* 顶部区域 */
+        .atm-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px 8px 28px;
+            background: linear-gradient(180deg, #f5f1eb 0%, #e8e2d8 100%);
+            border-radius: 20px 20px 0 0;
+            position: relative;
+        }
+        .atm-top .camera-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .atm-camera {
+            width: 26px;
+            height: 26px;
+            background: radial-gradient(circle, #1a1a1a 30%, #333 60%, #111 100%);
+            border-radius: 50%;
+            border: 2px solid #555;
+            position: relative;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8), 0 0 0 2px rgba(0, 0, 0, 0.3);
+        }
+        .atm-camera::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #ff3333 0%, #880000 100%);
+            border-radius: 50%;
+            animation: camera-blink 3s infinite;
+        }
+        @keyframes camera-blink {
+            0%,
+            95%,
+            100% {
+                opacity: 1;
+            }
+            96%,
+            99% {
+                opacity: 0.2;
+            }
+        }
+        .atm-sensor {
+            width: 10px;
+            height: 10px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            border: 1px solid #444;
+        }
+        .atm-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            font-size: 20px;
+            letter-spacing: 1px;
+            color: #c41230;
+        }
+        .atm-brand .icbc-logo {
+            width: 38px;
+            height: 38px;
+            background: #c41230;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: -0.5px;
+            box-shadow: 0 2px 6px rgba(196, 18, 48, 0.4);
+            line-height: 1;
+            text-align: center;
+        }
+        .atm-brand .brand-text {
+            font-size: 15px;
+            color: #333;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .atm-top-lights {
+            display: flex;
+            gap: 8px;
+        }
+        .atm-top-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            box-shadow: 0 0 6px #4caf50;
+            animation: light-pulse 2s infinite;
+        }
+        .atm-top-light:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+        .atm-top-light:nth-child(3) {
+            animation-delay: 1s;
+        }
+        @keyframes light-pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* 屏幕面板区域 */
+        .screen-panel {
+            display: flex;
+            align-items: stretch;
+            padding: 6px 12px;
+            gap: 0;
+            position: relative;
+            background: #2a2a2e;
+            margin: 0 16px;
+            border-radius: 4px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 左侧物理按钮列 - 靠左 */
+        .physical-buttons-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 18px 5px 18px 2px;
+            z-index: 5;
+            flex-shrink: 0;
+            align-self: stretch;
+        }
+        .physical-btn-left {
+            width: 36px;
+            height: 44px;
+            background: linear-gradient(180deg, #6a6a72 0%, #4a4a52 40%, #3a3a42 100%);
+            border: 2px solid #2a2a2e;
+            border-radius: 6px 0 0 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .physical-btn-left::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 7px solid transparent;
+            border-bottom: 7px solid transparent;
+            border-right: 10px solid #bbb;
+            position: absolute;
+            right: 4px;
+            transition: border-right-color 0.15s;
+        }
+        .physical-btn-left:hover {
+            background: linear-gradient(180deg, #c41230 0%, #9a0e24 100%);
+            border-color: #1a1a1a;
+            box-shadow: 0 0 16px rgba(196, 18, 48, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+        .physical-btn-left:hover::after {
+            border-right-color: #fff;
+        }
+        .physical-btn-left:active {
+            transform: scale(0.94) translateX(-1px);
+            transition: all 0.05s;
+            background: linear-gradient(180deg, #8a0d1f 0%, #6a0a18 100%);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+        }
+        .physical-btn-left.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+            background: linear-gradient(180deg, #4a4a50 0%, #35353a 100%);
+        }
+        .physical-btn-left.disabled::after {
+            border-right-color: #555;
+        }
+
+        /* 屏幕主体 */
+        .screen-main {
+            flex: 1;
+            background: #1a1d22;
+            border-radius: 3px;
+            border: 4px solid #1a1a1e;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7);
+            aspect-ratio: 4/3;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+        .screen-inner {
+            flex: 1;
+            background: linear-gradient(180deg, #f8f9fb 0%, #eef1f5 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 屏幕顶部ICBC标题栏 */
+        .screen-title-bar {
+            background: linear-gradient(180deg, #c41230 0%, #a00e28 100%);
+            color: #fff;
+            text-align: center;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+        .screen-title-bar .mini-logo {
+            width: 22px;
+            height: 22px;
+            background: #fff;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #c41230;
+            font-weight: 900;
+            font-size: 9px;
+        }
+        .screen-content-area {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 屏幕内左右标签列 */
+        .screen-labels-left {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 4px 10px 6px;
+            z-index: 3;
+            flex-shrink: 0;
+        }
+        .screen-label-left-item {
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a5fb4;
+            padding: 6px 4px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s;
+            line-height: 1.3;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            background: rgba(26, 95, 180, 0.04);
+            border-left: 3px solid transparent;
+            letter-spacing: 0.3px;
+        }
+        .screen-label-left-item:hover {
+            background: rgba(196, 18, 48, 0.08);
+            color: #c41230;
+            border-left: 3px solid #c41230;
+            font-weight: 700;
+        }
+        .screen-label-left-item.active-flash {
+            animation: label-flash 0.3s ease-out;
+        }
+        @keyframes label-flash {
+            0% {
+                background: rgba(196, 18, 48, 0.3);
+                color: #c41230;
+            }
+            100% {
+                background: rgba(26, 95, 180, 0.04);
+                color: #1a5fb4;
+            }
+        }
+        .screen-label-left-item.empty-label {
+            color: transparent;
+            cursor: default;
+            pointer-events: none;
+            background: transparent;
+            border-left-color: transparent;
+        }
+
+        .screen-center-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            z-index: 1;
+        }
+        .screen-center-content .main-prompt {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: 1px;
+            line-height: 1.6;
+        }
+        .screen-center-content .sub-prompt {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .screen-center-content .icon-display {
+            font-size: 60px;
+            margin-bottom: 10px;
+            animation: float-icon 3s ease-in-out infinite;
+        }
+        @keyframes float-icon {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .screen-labels-right {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 6px 10px 4px;
+            z-index: 3;
+            flex-shrink: 0;
+        }
+        .screen-label-right-item {
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a5fb4;
+            padding: 6px 4px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.15s;
+            line-height: 1.3;
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            background: rgba(26, 95, 180, 0.04);
+            border-right: 3px solid transparent;
+            letter-spacing: 0.3px;
+        }
+        .screen-label-right-item:hover {
+            background: rgba(196, 18, 48, 0.08);
+            color: #c41230;
+            border-right: 3px solid #c41230;
+            font-weight: 700;
+        }
+        .screen-label-right-item.active-flash {
+            animation: label-flash-r 0.3s ease-out;
+        }
+        @keyframes label-flash-r {
+            0% {
+                background: rgba(196, 18, 48, 0.3);
+                color: #c41230;
+            }
+            100% {
+                background: rgba(26, 95, 180, 0.04);
+                color: #1a5fb4;
+            }
+        }
+        .screen-label-right-item.empty-label {
+            color: transparent;
+            cursor: default;
+            pointer-events: none;
+            background: transparent;
+            border-right-color: transparent;
+        }
+
+        /* 右侧物理按钮列 - 靠右 */
+        .physical-buttons-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 18px 2px 18px 5px;
+            z-index: 5;
+            flex-shrink: 0;
+            align-self: stretch;
+        }
+        .physical-btn-right {
+            width: 36px;
+            height: 44px;
+            background: linear-gradient(180deg, #6a6a72 0%, #4a4a52 40%, #3a3a42 100%);
+            border: 2px solid #2a2a2e;
+            border-radius: 0 6px 6px 0;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .physical-btn-right::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-top: 7px solid transparent;
+            border-bottom: 7px solid transparent;
+            border-left: 10px solid #bbb;
+            position: absolute;
+            left: 4px;
+            transition: border-left-color 0.15s;
+        }
+        .physical-btn-right:hover {
+            background: linear-gradient(180deg, #c41230 0%, #9a0e24 100%);
+            border-color: #1a1a1a;
+            box-shadow: 0 0 16px rgba(196, 18, 48, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateX(2px);
+        }
+        .physical-btn-right:hover::after {
+            border-left-color: #fff;
+        }
+        .physical-btn-right:active {
+            transform: scale(0.94) translateX(1px);
+            transition: all 0.05s;
+            background: linear-gradient(180deg, #8a0d1f 0%, #6a0a18 100%);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+        }
+        .physical-btn-right.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+            background: linear-gradient(180deg, #4a4a50 0%, #35353a 100%);
+        }
+        .physical-btn-right.disabled::after {
+            border-left-color: #555;
+        }
+
+        /* 底部面板 */
+        .atm-bottom-panel {
+            background: linear-gradient(180deg, #e2dbd0 0%, #d5cdc0 100%);
+            padding: 10px 20px 16px 20px;
+            border-radius: 0 0 16px 16px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        /* 键盘区 */
+        .keypad-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .keypad-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .keypad-btn {
+            width: 52px;
+            height: 40px;
+            border-radius: 6px;
+            border: 2px solid #999;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.12s;
+            letter-spacing: 1px;
+            background: linear-gradient(180deg, #f5f0ea 0%, #e0d8cc 100%);
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+        .keypad-btn:hover {
+            background: linear-gradient(180deg, #fff 0%, #eee5d8 100%);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+            transform: translateY(-1px);
+        }
+        .keypad-btn:active {
+            transform: scale(0.93);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+            transition: all 0.05s;
+        }
+        .keypad-btn.key-cancel {
+            background: linear-gradient(180deg, #e8a817 0%, #c48a10 100%);
+            color: #fff;
+            border-color: #a0700a;
+            font-size: 13px;
+        }
+        .keypad-btn.key-cancel:hover {
+            background: linear-gradient(180deg, #f5b820 0%, #d49914 100%);
+        }
+        .keypad-btn.key-clear {
+            background: linear-gradient(180deg, #e07030 0%, #c05520 100%);
+            color: #fff;
+            border-color: #8a3a15;
+            font-size: 13px;
+        }
+        .keypad-btn.key-clear:hover {
+            background: linear-gradient(180deg, #f08040 0%, #d06028 100%);
+        }
+        .keypad-btn.key-confirm {
+            background: linear-gradient(180deg, #2e8b57 0%, #1e6b3f 100%);
+            color: #fff;
+            border-color: #155230;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+        .keypad-btn.key-confirm:hover {
+            background: linear-gradient(180deg, #38a065 0%, #25804a 100%);
+        }
+        .keypad-btn.key-blank {
+            background: transparent;
+            border-color: transparent;
+            cursor: default;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        /* 插卡口和凭条口 */
+        .slots-area {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .card-slot {
+            width: 70px;
+            height: 22px;
+            background: #1a1a1a;
+            border-radius: 3px;
+            border: 2px solid #444;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .card-slot:hover {
+            box-shadow: 0 0 10px rgba(196, 18, 48, 0.5), inset 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        .card-slot-label {
+            font-size: 9px;
+            color: #666;
+            text-align: center;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        .receipt-slot {
+            width: 60px;
+            height: 8px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            border: 1px solid #444;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        .cash-slot {
+            width: 90px;
+            height: 14px;
+            background: #1a1a1a;
+            border-radius: 3px;
+            border: 2px solid #444;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+        .cash-slot-label {
+            font-size: 9px;
+            color: #666;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        /* 指示灯 */
+        .indicator-lights {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            padding: 4px 0;
+        }
+        .indicator-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4caf50;
+            box-shadow: 0 0 5px #4caf50;
+        }
+        .indicator-dot.amber {
+            background: #ff9800;
+            box-shadow: 0 0 5px #ff9800;
+            animation: blink-amber 1.5s infinite;
+        }
+        @keyframes blink-amber {
+            0%,
+            60%,
+            100% {
+                opacity: 1;
+            }
+            70%,
+            90% {
+                opacity: 0.2;
+            }
+        }
+
+        /* 屏幕内密码输入显示 */
+        .password-dots {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .password-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #333;
+            border: 2px solid #555;
+            transition: all 0.2s;
+        }
+        .password-dot.filled {
+            background: #c41230;
+            border-color: #8a0d1f;
+            box-shadow: 0 0 8px rgba(196, 18, 48, 0.5);
+        }
+
+        /* 金额显示 */
+        .amount-display {
+            font-size: 36px;
+            font-weight: 900;
+            color: #c41230;
+            letter-spacing: 2px;
+            font-family: 'Courier New', 'Consolas', monospace;
+        }
+        .amount-unit {
+            font-size: 16px;
+            color: #666;
+            font-weight: 400;
+        }
+
+        /* 提示信息 */
+        .info-banner {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 11px;
+            color: #8a6d14;
+            text-align: center;
+            margin: 6px 0;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 680px) {
+            .atm-machine {
+                width: 98vw;
+                border-radius: 12px;
+                transform: scale(0.85);
+                transform-origin: top center;
+            }
+            .screen-main {
+                min-height: 280px;
+            }
+            .physical-btn-left,
+            .physical-btn-right {
+                width: 24px;
+                height: 32px;
+            }
+            .physical-btn-left::after,
+            .physical-btn-right::after {
+                border-top-width: 5px;
+                border-bottom-width: 5px;
+                border-right-width: 7px;
+                border-left-width: 7px;
+            }
+            .screen-labels-left,
+            .screen-labels-right {
+                width: 80px;
+            }
+            .screen-label-left-item,
+            .screen-label-right-item {
+                font-size: 10px;
+                min-height: 30px;
+                padding: 3px 2px;
+            }
+            .keypad-btn {
+                width: 38px;
+                height: 32px;
+                font-size: 13px;
+            }
+            .screen-center-content .main-prompt {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="floor-shadow"></div>
+
+    <!-- ATM 机身 -->
+    <div class="atm-machine" id="atmMachine">
+        <!-- 顶部 -->
+        <div class="atm-top">
+            <div class="camera-area">
+                <div class="atm-camera"></div>
+                <div class="atm-sensor"></div>
+            </div>
+            <div class="atm-brand">
+                <div class="icbc-logo">ICBC</div>
+                <span class="brand-text">中国工商银行</span>
+            </div>
+            <div class="atm-top-lights">
+                <div class="atm-top-light"></div>
+                <div class="atm-top-light"></div>
+                <div class="atm-top-light"></div>
+            </div>
+        </div>
+
+        <!-- 屏幕面板 + 左右物理按钮 -->
+        <div class="screen-panel">
+            <!-- 左侧物理按钮 - 靠左 -->
+            <div class="physical-buttons-left" id="physBtnLeft">
+                <button class="physical-btn-left" data-left="0" title="左1"></button>
+                <button class="physical-btn-left" data-left="1" title="左2"></button>
+                <button class="physical-btn-left" data-left="2" title="左3"></button>
+                <button class="physical-btn-left" data-left="3" title="左4"></button>
+            </div>
+
+            <!-- 屏幕 -->
+            <div class="screen-main">
+                <div class="screen-inner" id="screenInner">
+                    <div class="screen-title-bar">
+                        <div class="mini-logo">工</div>
+                        中国工商银行 ATM
+                    </div>
+                    <div class="screen-content-area" id="screenContentArea">
+                        <!-- 左侧标签 -->
+                        <div class="screen-labels-left" id="labelsLeft">
+                            <div class="screen-label-left-item" data-label-left="0">单位扫码办理</div>
+                            <div class="screen-label-left-item" data-label-left="1">语言</div>
+                            <div class="screen-label-left-item empty-label" data-label-left="2">—</div>
+                            <div class="screen-label-left-item empty-label" data-label-left="3">—</div>
+                        </div>
+                        <!-- 中央内容 -->
+                        <div class="screen-center-content" id="centerContent">
+                            <div>
+                                <div class="icon-display">🏦</div>
+                                <div class="main-prompt">欢迎使用工商银行ATM</div>
+                                <div class="sub-prompt">请选择服务方式</div>
+                            </div>
+                        </div>
+                        <!-- 右侧标签 -->
+                        <div class="screen-labels-right" id="labelsRight">
+                            <div class="screen-label-right-item" data-label-right="0">插卡办理</div>
+                            <div class="screen-label-right-item" data-label-right="1">用手机办理</div>
+                            <div class="screen-label-right-item" data-label-right="2">存折预约取款</div>
+                            <div class="screen-label-right-item empty-label" data-label-right="3">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧物理按钮 - 靠右 -->
+            <div class="physical-buttons-right" id="physBtnRight">
+                <button class="physical-btn-right" data-right="0" title="右1"></button>
+                <button class="physical-btn-right" data-right="1" title="右2"></button>
+                <button class="physical-btn-right" data-right="2" title="右3"></button>
+                <button class="physical-btn-right" data-right="3" title="右4"></button>
+            </div>
+        </div>
+
+        <!-- 底部面板 -->
+        <div class="atm-bottom-panel">
+            <!-- 键盘 -->
+            <div class="keypad-area" id="keypadArea">
+                <div class="indicator-lights">
+                    <div class="indicator-dot"></div>
+                    <div class="indicator-dot amber" id="processingLight" style="opacity:0.3;"></div>
+                    <div class="indicator-dot"></div>
+                </div>
+                <div class="keypad-row">
+                    <button class="keypad-btn key-blank"></button>
+                    <button class="keypad-btn key-blank"></button>
+                    <button class="keypad-btn key-blank"></button>
+                    <button class="keypad-btn key-cancel" id="btnCancel">取消</button>
+                </div>
+                <div class="keypad-row">
+                    <button class="keypad-btn key-num" data-key="1">1</button>
+                    <button class="keypad-btn key-num" data-key="2">2</button>
+                    <button class="keypad-btn key-num" data-key="3">3</button>
+                    <button class="keypad-btn key-clear" id="btnClear">更正</button>
+                </div>
+                <div class="keypad-row">
+                    <button class="keypad-btn key-num" data-key="4">4</button>
+                    <button class="keypad-btn key-num" data-key="5">5</button>
+                    <button class="keypad-btn key-num" data-key="6">6</button>
+                    <button class="keypad-btn key-blank"></button>
+                </div>
+                <div class="keypad-row">
+                    <button class="keypad-btn key-num" data-key="7">7</button>
+                    <button class="keypad-btn key-num" data-key="8">8</button>
+                    <button class="keypad-btn key-num" data-key="9">9</button>
+                    <button class="keypad-btn key-confirm" id="btnConfirm">确认</button>
+                </div>
+                <div class="keypad-row">
+                    <button class="keypad-btn key-blank"></button>
+                    <button class="keypad-btn key-num" data-key="0">0</button>
+                    <button class="keypad-btn key-num" data-key=".">·</button>
+                    <button class="keypad-btn key-blank"></button>
+                </div>
+            </div>
+
+            <!-- 插卡口 / 凭条口 / 出钞口 -->
+            <div class="slots-area">
+                <div>
+                    <div class="card-slot" id="cardSlot" title="插卡口"></div>
+                    <div class="card-slot-label">插卡口</div>
+                </div>
+                <div>
+                    <div class="receipt-slot"></div>
+                    <div class="card-slot-label">凭条口</div>
+                </div>
+                <div>
+                    <div class="cash-slot" id="cashSlot"></div>
+                    <div class="cash-slot-label">出钞口</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ============ 状态管理 ============
+            const STATE = {
+                WELCOME: 'welcome', // 第一层：初始欢迎界面
+                CARD_INSERTED: 'card_inserted', // 插卡后输入密码
+                MAIN_MENU: 'main_menu', // 第二层：主菜单
+                WITHDRAW_AMOUNT: 'withdraw_amount', // 第三层：取款金额选择
+                WITHDRAW_OTHER: 'withdraw_other', // 取款-其他金额输入
+                WITHDRAW_CONFIRM: 'withdraw_confirm', // 取款确认
+                WITHDRAW_PROCESSING: 'withdraw_processing', // 取款处理中
+                WITHDRAW_COMPLETE: 'withdraw_complete', // 取款完成
+                DEPOSIT: 'deposit', // 存款界面
+                DEPOSIT_PROCESSING: 'deposit_processing', // 存款处理中
+                DEPOSIT_COMPLETE: 'deposit_complete', // 存款完成
+                QUERY: 'query', // 查询余额
+                TRANSFER_INPUT_ACCOUNT: 'transfer_input_account', // 转账-输入账号
+                TRANSFER_INPUT_AMOUNT: 'transfer_input_amount', // 转账-输入金额
+                TRANSFER_CONFIRM: 'transfer_confirm', // 转账确认
+                TRANSFER_COMPLETE: 'transfer_complete', // 转账完成
+                PHONE_SERVICE: 'phone_service', // 手机办理提示
+                PASSBOOK_APPOINT: 'passbook_appoint', // 存折预约取款
+                UNIT_SCAN: 'unit_scan', // 单位扫码办理
+                CARD_EJECTING: 'card_ejecting', // 退卡中
+            };
+
+            let currentState = STATE.WELCOME;
+            let previousState = null;
+            let cardInserted = false;
+            let passwordInput = '';
+            let passwordAttempts = 0;
+            const MAX_PASSWORD_ATTEMPTS = 3;
+            let selectedAmount = 0;
+            let customAmountInput = '';
+            let transferAccountInput = '';
+            let transferAmountInput = '';
+            let inputMode = null; // 'password' | 'custom_amount' | 'transfer_account' | 'transfer_amount'
+            let processingTimer = null;
+
+            // 模拟账户余额
+            let accountBalance = 15800.50;
+            const dailyWithdrawLimit = 20000;
+            let todayWithdrawn = 0;
+
+            // ============ DOM 引用 ============
+            const labelsLeft = document.getElementById('labelsLeft');
+            const labelsRight = document.getElementById('labelsRight');
+            const centerContent = document.getElementById('centerContent');
+            const physBtnLeft = document.getElementById('physBtnLeft');
+            const physBtnRight = document.getElementById('physBtnRight');
+            const btnCancel = document.getElementById('btnCancel');
+            const btnClear = document.getElementById('btnClear');
+            const btnConfirm = document.getElementById('btnConfirm');
+            const cardSlot = document.getElementById('cardSlot');
+            const cashSlot = document.getElementById('cashSlot');
+            const processingLight = document.getElementById('processingLight');
+            const keypadArea = document.getElementById('keypadArea');
+
+            // ============ 屏幕渲染 ============
+            function setLeftLabels(labels) {
+                const items = labelsLeft.querySelectorAll('.screen-label-left-item');
+                items.forEach((item, i) => {
+                    if (i < labels.length) {
+                        item.textContent = labels[i];
+                        item.classList.remove('empty-label');
+                        item.style.cursor = 'pointer';
+                        item.style.pointerEvents = 'auto';
+                    } else {
+                        item.textContent = '—';
+                        item.classList.add('empty-label');
+                        item.style.cursor = 'default';
+                        item.style.pointerEvents = 'none';
+                    }
+                });
+                updatePhysicalButtons('left', labels);
+            }
+
+            function setRightLabels(labels) {
+                const items = labelsRight.querySelectorAll('.screen-label-right-item');
+                items.forEach((item, i) => {
+                    if (i < labels.length) {
+                        item.textContent = labels[i];
+                        item.classList.remove('empty-label');
+                        item.style.cursor = 'pointer';
+                        item.style.pointerEvents = 'auto';
+                    } else {
+                        item.textContent = '—';
+                        item.classList.add('empty-label');
+                        item.style.cursor = 'default';
+                        item.style.pointerEvents = 'none';
+                    }
+                });
+                updatePhysicalButtons('right', labels);
+            }
+
+            function updatePhysicalButtons(side, labels) {
+                const container = side === 'left' ? physBtnLeft : physBtnRight;
+                const buttons = container.querySelectorAll('button');
+                buttons.forEach((btn, i) => {
+                    if (i < labels.length && labels[i] && labels[i].trim() && labels[i] !== '—') {
+                        btn.classList.remove('disabled');
+                        btn.disabled = false;
+                    } else {
+                        btn.classList.add('disabled');
+                        btn.disabled = true;
+                    }
+                });
+            }
+
+            function setCenterContent(html) {
+                centerContent.innerHTML = html;
+            }
+
+            function flashLabel(side, index) {
+                const container = side === 'left' ? labelsLeft : labelsRight;
+                const items = container.querySelectorAll(
+                    `.screen-label-${side === 'left' ? 'left' : 'right'}-item`);
+                if (items[index]) {
+                    items[index].classList.add('active-flash');
+                    setTimeout(() => items[index].classList.remove('active-flash'), 350);
+                }
+            }
+
+            function flashPhysicalBtn(side, index) {
+                const container = side === 'left' ? physBtnLeft : physBtnRight;
+                const btn = container.querySelectorAll('button')[index];
+                if (btn && !btn.classList.contains('disabled')) {
+                    btn.style.background = 'linear-gradient(180deg, #c41230 0%, #9a0e24 100%)';
+                    btn.style.boxShadow = '0 0 20px rgba(196,18,48,0.9), inset 0 1px 0 rgba(255,255,255,0.2)';
+                    if (side === 'left') {
+                        btn.querySelector('::after');
+                        btn.style.setProperty('--arrow-color', '#fff');
+                    }
+                    setTimeout(() => {
+                        btn.style.background = '';
+                        btn.style.boxShadow = '';
+                        btn.style.setProperty('--arrow-color', '');
+                    }, 300);
+                }
+            }
+
+            // ============ 物理按钮事件 ============
+            physBtnLeft.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.classList.contains('disabled')) return;
+                    const index = parseInt(btn.getAttribute('data-left'));
+                    flashPhysicalBtn('left', index);
+                    flashLabel('left', index);
+                    handleLeftButton(index);
+                });
+            });
+
+            physBtnRight.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.classList.contains('disabled')) return;
+                    const index = parseInt(btn.getAttribute('data-right'));
+                    flashPhysicalBtn('right', index);
+                    flashLabel('right', index);
+                    handleRightButton(index);
+                });
+            });
+
+            // 屏幕标签点击事件
+            labelsLeft.addEventListener('click', (e) => {
+                const item = e.target.closest('.screen-label-left-item');
+                if (!item || item.classList.contains('empty-label')) return;
+                const index = parseInt(item.getAttribute('data-label-left'));
+                flashLabel('left', index);
+                flashPhysicalBtn('left', index);
+                handleLeftButton(index);
+            });
+
+            labelsRight.addEventListener('click', (e) => {
+                const item = e.target.closest('.screen-label-right-item');
+                if (!item || item.classList.contains('empty-label')) return;
+                const index = parseInt(item.getAttribute('data-label-right'));
+                flashLabel('right', index);
+                flashPhysicalBtn('right', index);
+                handleRightButton(index);
+            });
+
+            // 插卡口点击
+            cardSlot.addEventListener('click', () => {
+                if (!cardInserted && currentState === STATE.WELCOME) {
+                    insertCard();
+                } else if (cardInserted && currentState === STATE.CARD_EJECTING) {
+                    // 模拟取卡
+                    cardInserted = false;
+                    cardSlot.style.background = '#1a1a1a';
+                    cardSlot.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.8)';
+                    resetToWelcome();
+                }
+            });
+
+            // ============ 键盘事件 ============
+            keypadArea.addEventListener('click', (e) => {
+                const keyBtn = e.target.closest('.keypad-btn.key-num');
+                if (keyBtn && inputMode) {
+                    const key = keyBtn.getAttribute('data-key');
+                    handleKeyInput(key);
+                    return;
+                }
+            });
+
+            btnCancel.addEventListener('click', () => handleCancel());
+            btnClear.addEventListener('click', () => handleClear());
+            btnConfirm.addEventListener('click', () => handleConfirm());
+
+            // 物理键盘支持
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= '0' && e.key <= '9' && inputMode) {
+                    handleKeyInput(e.key);
+                    highlightKeypadKey(e.key);
+                } else if (e.key === 'Backspace' && inputMode) {
+                    handleClear();
+                } else if (e.key === 'Enter') {
+                    handleConfirm();
+                    e.preventDefault();
+                } else if (e.key === 'Escape') {
+                    handleCancel();
+                } else if (e.key === '.') {
+                    handleKeyInput('.');
+                    highlightKeypadKey('.');
+                }
+            });
+
+            function highlightKeypadKey(key) {
+                const allKeys = keypadArea.querySelectorAll('.keypad-btn.key-num');
+                allKeys.forEach(k => {
+                    if (k.getAttribute('data-key') === key) {
+                        k.style.transform = 'scale(0.9)';
+                        k.style.background = 'linear-gradient(180deg, #c41230 0%, #9a0e24 100%)';
+                        k.style.color = '#fff';
+                        setTimeout(() => {
+                            k.style.transform = '';
+                            k.style.background = '';
+                            k.style.color = '';
+                        }, 150);
+                    }
+                });
+            }
+
+            function handleKeyInput(key) {
+                if (inputMode === 'password') {
+                    if (passwordInput.length < 6) {
+                        passwordInput += key;
+                        updatePasswordDisplay();
+                        if (passwordInput.length === 6) {
+                            setTimeout(() => verifyPassword(), 400);
+                        }
+                    }
+                } else if (inputMode === 'custom_amount') {
+                    if (key === '.' && customAmountInput.includes('.')) return;
+                    if (customAmountInput.length < 8) {
+                        customAmountInput += key;
+                        updateCustomAmountDisplay();
+                    }
+                } else if (inputMode === 'transfer_account') {
+                    if (transferAccountInput.length < 19) {
+                        transferAccountInput += key;
+                        updateTransferAccountDisplay();
+                    }
+                } else if (inputMode === 'transfer_amount') {
+                    if (key === '.' && transferAmountInput.includes('.')) return;
+                    if (transferAmountInput.length < 10) {
+                        transferAmountInput += key;
+                        updateTransferAmountDisplay();
+                    }
+                }
+            }
+
+            function handleClear() {
+                if (inputMode === 'password') {
+                    passwordInput = passwordInput.slice(0, -1);
+                    updatePasswordDisplay();
+                } else if (inputMode === 'custom_amount') {
+                    customAmountInput = customAmountInput.slice(0, -1);
+                    updateCustomAmountDisplay();
+                } else if (inputMode === 'transfer_account') {
+                    transferAccountInput = transferAccountInput.slice(0, -1);
+                    updateTransferAccountDisplay();
+                } else if (inputMode === 'transfer_amount') {
+                    transferAmountInput = transferAmountInput.slice(0, -1);
+                    updateTransferAmountDisplay();
+                }
+            }
+
+            function handleConfirm() {
+                if (inputMode === 'custom_amount' && customAmountInput) {
+                    const amt = parseFloat(customAmountInput);
+                    if (amt > 0 && amt <= dailyWithdrawLimit - todayWithdrawn && amt <= accountBalance) {
+                        selectedAmount = amt;
+                        customAmountInput = '';
+                        inputMode = null;
+                        goToState(STATE.WITHDRAW_CONFIRM);
+                    } else {
+                        shakeScreen();
+                    }
+                } else if (inputMode === 'transfer_account' && transferAccountInput.length >= 6) {
+                    inputMode = 'transfer_amount';
+                    transferAmountInput = '';
+                    renderTransferAmount();
+                } else if (inputMode === 'transfer_amount' && transferAmountInput) {
+                    const amt = parseFloat(transferAmountInput);
+                    if (amt > 0 && amt <= accountBalance) {
+                        transferAmountInput = '';
+                        inputMode = null;
+                        goToState(STATE.TRANSFER_CONFIRM);
+                    } else {
+                        shakeScreen();
+                    }
+                } else if (currentState === STATE.WITHDRAW_CONFIRM && selectedAmount > 0) {
+                    processWithdrawal();
+                }
+            }
+
+            function handleCancel() {
+                if (inputMode) {
+                    inputMode = null;
+                    passwordInput = '';
+                    customAmountInput = '';
+                    transferAccountInput = '';
+                    transferAmountInput = '';
+                    if (currentState === STATE.CARD_INSERTED) {
+                        resetToWelcome();
+                    } else if (cardInserted) {
+                        goToState(STATE.MAIN_MENU);
+                    } else {
+                        resetToWelcome();
+                    }
+                    return;
+                }
+                if (currentState === STATE.WELCOME) return;
+                if (currentState === STATE.MAIN_MENU && cardInserted) {
+                    ejectCard();
+                    return;
+                }
+                if (cardInserted && currentState !== STATE.WELCOME && currentState !== STATE.CARD_EJECTING) {
+                    goToState(STATE.MAIN_MENU);
+                } else if (!cardInserted) {
+                    resetToWelcome();
+                }
+            }
+
+            function shakeScreen() {
+                const screenInner = document.getElementById('screenInner');
+                screenInner.style.animation = 'shake 0.4s ease-out';
+                setTimeout(() => screenInner.style.animation = '', 400);
+            }
+
+            // 添加shake动画
+            const shakeStyle = document.createElement('style');
+            shakeStyle.textContent = `
+                @keyframes shake {
+                    0%,100% { transform: translateX(0); }
+                    15% { transform: translateX(-8px); }
+                    30% { transform: translateX(8px); }
+                    45% { transform: translateX(-6px); }
+                    60% { transform: translateX(6px); }
+                    75% { transform: translateX(-3px); }
+                    90% { transform: translateX(3px); }
+                }
+            `;
+            document.head.appendChild(shakeStyle);
+
+            // ============ 按钮处理逻辑 ============
+            function handleLeftButton(index) {
+                switch (currentState) {
+                    case STATE.WELCOME:
+                        if (index === 0) goToState(STATE.UNIT_SCAN);
+                        if (index === 1) toggleLanguage();
+                        break;
+                    case STATE.MAIN_MENU:
+                        if (index === 0) toggleLanguage();
+                        if (index === 1) goToState(STATE.TRANSFER_INPUT_ACCOUNT);
+                        if (index === 2) ejectCard();
+                        break;
+                    case STATE.WITHDRAW_AMOUNT:
+                        if (index === 0) selectAmount(100);
+                        if (index === 1) selectAmount(200);
+                        if (index === 2) selectAmount(500);
+                        if (index === 3) goToState(STATE.MAIN_MENU);
+                        break;
+                    case STATE.WITHDRAW_CONFIRM:
+                        if (index === 0) goToState(STATE.WITHDRAW_AMOUNT);
+                        if (index === 3) ejectCard();
+                        break;
+                    case STATE.QUERY:
+                        if (index === 3) goToState(STATE.MAIN_MENU);
+                        break;
+                    case STATE.DEPOSIT:
+                        if (index === 3) goToState(STATE.MAIN_MENU);
+                        break;
+                    case STATE.TRANSFER_CONFIRM:
+                        if (index === 0) goToState(STATE.TRANSFER_INPUT_ACCOUNT);
+                        if (index === 3) ejectCard();
+                        break;
+                    default:
+                        if (cardInserted && index === 3) goToState(STATE.MAIN_MENU);
+                        break;
+                }
+            }
+
+            function handleRightButton(index) {
+                switch (currentState) {
+                    case STATE.WELCOME:
+                        if (index === 0) insertCard();
+                        if (index === 1) goToState(STATE.PHONE_SERVICE);
+                        if (index === 2) goToState(STATE.PASSBOOK_APPOINT);
+                        break;
+                    case STATE.MAIN_MENU:
+                        if (index === 0) goToState(STATE.QUERY);
+                        if (index === 1) goToState(STATE.WITHDRAW_AMOUNT);
+                        if (index === 2) goToState(STATE.DEPOSIT);
+                        break;
+                    case STATE.WITHDRAW_AMOUNT:
+                        if (index === 0) selectAmount(1000);
+                        if (index === 1) selectAmount(2000);
+                        if (index === 2) selectOtherAmount();
+                        if (index === 3 && selectedAmount > 0) goToState(STATE.WITHDRAW_CONFIRM);
+                        break;
+                    case STATE.WITHDRAW_CONFIRM:
+                        if (index === 3) processWithdrawal();
+                        break;
+                    case STATE.QUERY:
+                        if (index === 0) goToState(STATE.MAIN_MENU);
+                        break;
+                    case STATE.DEPOSIT:
+                        if (index === 0) processDeposit();
+                        break;
+                    case STATE.TRANSFER_CONFIRM:
+                        if (index === 3) processTransfer();
+                        break;
+                    default:
+                        if (cardInserted && index === 0) goToState(STATE.MAIN_MENU);
+                        break;
+                }
+            }
+
+            // ============ 状态切换 ============
+            function goToState(newState) {
+                if (processingTimer) {
+                    clearTimeout(processingTimer);
+                    processingTimer = null;
+                }
+                inputMode = null;
+                passwordInput = '';
+                customAmountInput = '';
+                transferAccountInput = '';
+                transferAmountInput = '';
+                selectedAmount = 0;
+                previousState = currentState;
+                currentState = newState;
+                renderCurrentState();
+            }
+
+            function resetToWelcome() {
+                cardInserted = false;
+                passwordInput = '';
+                passwordAttempts = 0;
+                selectedAmount = 0;
+                customAmountInput = '';
+                transferAccountInput = '';
+                transferAmountInput = '';
+                inputMode = null;
+                if (processingTimer) {
+                    clearTimeout(processingTimer);
+                    processingTimer = null;
+                }
+                cardSlot.style.background = '#1a1a1a';
+                cardSlot.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.8)';
+                cashSlot.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.8)';
+                cashSlot.style.background = '#1a1a1a';
+                processingLight.style.opacity = '0.3';
+                currentState = STATE.WELCOME;
+                previousState = null;
+                renderCurrentState();
+            }
+
+            function insertCard() {
+                if (cardInserted) return;
+                cardInserted = true;
+                cardSlot.style.background = '#3a3a3a';
+                cardSlot.style.boxShadow = '0 0 12px rgba(196,18,48,0.6), inset 0 1px 3px rgba(0,0,0,0.6)';
+                passwordAttempts = 0;
+                passwordInput = '';
+                inputMode = 'password';
+                goToState(STATE.CARD_INSERTED);
+            }
+
+            function ejectCard() {
+                if (!cardInserted) return;
+                currentState = STATE.CARD_EJECTING;
+                inputMode = null;
+                passwordInput = '';
+                renderCardEjecting();
+                processingLight.style.opacity = '1';
+                processingLight.classList.add('amber');
+                cardSlot.style.boxShadow = '0 0 20px rgba(255,152,0,0.8), inset 0 1px 3px rgba(0,0,0,0.6)';
+                cardSlot.style.background = '#4a3a1a';
+
+                processingTimer = setTimeout(() => {
+                    cardInserted = false;
+                    cardSlot.style.background = '#1a1a1a';
+                    cardSlot.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.8)';
+                    processingLight.style.opacity = '0.3';
+                    processingLight.classList.remove('amber');
+                    processingTimer = null;
+                    resetToWelcome();
+                }, 2500);
+            }
+
+            function toggleLanguage() {
+                const titleBar = document.querySelector('.screen-title-bar');
+                const currentLang = titleBar.getAttribute('data-lang') || 'zh';
+                if (currentLang === 'zh') {
+                    titleBar.setAttribute('data-lang', 'en');
+                    titleBar.innerHTML =
+                        '<div class="mini-logo">工</div> ICBC ATM Service';
+                    flashMessage('语言已切换为 English');
+                } else {
+                    titleBar.setAttribute('data-lang', 'zh');
+                    titleBar.innerHTML =
+                        '<div class="mini-logo">工</div> 中国工商银行 ATM';
+                    flashMessage('语言已切换为 中文');
+                }
+            }
+
+            function flashMessage(msg) {
+                const existing = document.querySelector('.flash-msg');
+                if (existing) existing.remove();
+                const msgEl = document.createElement('div');
+                msgEl.className = 'flash-msg';
+                msgEl.textContent = msg;
+                msgEl.style.cssText = `
+                    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+                    background: rgba(0,0,0,0.85); color: #fff; padding: 10px 22px;
+                    border-radius: 20px; font-size: 14px; font-weight: 600;
+                    z-index: 100; pointer-events: none; animation: fadeInUp 0.3s ease-out;
+                    letter-spacing: 1px;
+                `;
+                document.getElementById('screenInner').appendChild(msgEl);
+                setTimeout(() => {
+                    msgEl.style.opacity = '0';
+                    msgEl.style.transition = 'opacity 0.4s';
+                    setTimeout(() => msgEl.remove(), 400);
+                }, 1500);
+            }
+
+            function selectAmount(amt) {
+                selectedAmount = amt;
+                customAmountInput = '';
+                inputMode = null;
+                // 自动跳转到确认界面
+                const labels = getCurrentAmountLabels();
+                setLeftLabels(labels.left);
+                setRightLabels(labels.right);
+                updateCenterForAmountConfirm();
+                flashMessage('已选择 ¥' + amt.toLocaleString());
+                // 短暂延迟后显示确认界面
+                setTimeout(() => {
+                    if (currentState === STATE.WITHDRAW_AMOUNT && selectedAmount === amt) {
+                        goToState(STATE.WITHDRAW_CONFIRM);
+                    }
+                }, 600);
+            }
+
+            function selectOtherAmount() {
+                selectedAmount = 0;
+                customAmountInput = '';
+                inputMode = 'custom_amount';
+                goToState(STATE.WITHDRAW_OTHER);
+            }
+
+            function getCurrentAmountLabels() {
+                const labelsLeftData = ['100 元', '200 元', '500 元', '返回'];
+                const labelsRightData = ['1000 元', '2000 元', '其他金额', '确认'];
+                return { left: labelsLeftData, right: labelsRightData };
+            }
+
+            function updateCenterForAmountConfirm() {
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:14px;color:#666;margin-bottom:6px;">取款金额</div>
+                        <div class="amount-display">¥ ${selectedAmount.toLocaleString()}</div>
+                        <div class="amount-unit">元</div>
+                        <div style="font-size:11px;color:#999;margin-top:8px;">请按右侧确认键确认</div>
+                    </div>
+                `);
+            }
+
+            function verifyPassword() {
+                // 模拟密码验证（任意6位数字即可，演示用）
+                if (passwordInput.length === 6) {
+                    processingLight.style.opacity = '1';
+                    processingLight.classList.add('amber');
+                    setCenterContent(`
+                        <div>
+                            <div style="font-size:40px;">⏳</div>
+                            <div style="font-size:15px;color:#666;">正在验证...</div>
+                        </div>
+                    `);
+                    processingTimer = setTimeout(() => {
+                        processingLight.style.opacity = '0.3';
+                        processingLight.classList.remove('amber');
+                        passwordInput = '';
+                        inputMode = null;
+                        passwordAttempts = 0;
+                        goToState(STATE.MAIN_MENU);
+                        processingTimer = null;
+                    }, 1500);
+                }
+            }
+
+            function processWithdrawal() {
+                if (selectedAmount <= 0) return;
+                if (selectedAmount > accountBalance) {
+                    setCenterContent(`
+                        <div>
+                            <div style="font-size:40px;">⚠️</div>
+                            <div style="font-size:15px;color:#c41230;font-weight:700;">余额不足</div>
+                            <div style="font-size:12px;color:#666;margin-top:4px;">当前余额：¥${accountBalance.toLocaleString()}</div>
+                        </div>
+                    `);
+                    setTimeout(() => goToState(STATE.WITHDRAW_AMOUNT), 2000);
+                    return;
+                }
+                if (selectedAmount + todayWithdrawn > dailyWithdrawLimit) {
+                    setCenterContent(`
+                        <div>
+                            <div style="font-size:40px;">⚠️</div>
+                            <div style="font-size:15px;color:#c41230;font-weight:700;">超出每日取款限额</div>
+                            <div style="font-size:12px;color:#666;">每日限额：¥${dailyWithdrawLimit.toLocaleString()}</div>
+                        </div>
+                    `);
+                    setTimeout(() => goToState(STATE.WITHDRAW_AMOUNT), 2000);
+                    return;
+                }
+                goToState(STATE.WITHDRAW_PROCESSING);
+            }
+
+            function processDeposit() {
+                goToState(STATE.DEPOSIT_PROCESSING);
+            }
+
+            function processTransfer() {
+                const amt = parseFloat(transferAmountInput || '0');
+                if (amt > 0 && amt <= accountBalance && transferAccountInput.length >= 6) {
+                    goToState(STATE.TRANSFER_COMPLETE);
+                } else {
+                    shakeScreen();
+                }
+            }
+
+            // ============ 密码显示 ============
+            function updatePasswordDisplay() {
+                const dots = [];
+                for (let i = 0; i < 6; i++) {
+                    dots.push(`<span class="password-dot${i < passwordInput.length ? ' filled' : ''}"></span>`);
+                }
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:28px;">🔒</div>
+                        <div style="font-size:14px;color:#333;font-weight:600;margin-bottom:8px;">请输入6位密码</div>
+                        <div class="password-dots">${dots.join('')}</div>
+                        <div style="font-size:11px;color:#999;margin-top:10px;">使用下方数字键盘输入</div>
+                    </div>
+                `);
+            }
+
+            function updateCustomAmountDisplay() {
+                const displayAmt = customAmountInput ? parseFloat(customAmountInput).toLocaleString() : '0';
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:14px;color:#666;margin-bottom:6px;">请输入取款金额（100的倍数）</div>
+                        <div class="amount-display">¥ ${customAmountInput || '0'}</div>
+                        <div class="amount-unit">元</div>
+                        <div style="font-size:10px;color:#999;margin-top:6px;">单笔上限¥${(dailyWithdrawLimit - todayWithdrawn).toLocaleString()}</div>
+                        <div style="font-size:10px;color:#999;">按确认键提交</div>
+                    </div>
+                `);
+            }
+
+            function updateTransferAccountDisplay() {
+                const display = transferAccountInput.replace(/(\d{4})/g, '$1 ').trim();
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:14px;color:#666;margin-bottom:6px;">请输入对方账号</div>
+                        <div style="font-size:18px;font-weight:700;color:#1a5fb4;letter-spacing:1px;font-family:'Courier New',monospace;">${display || '____ ____ ____ ____'}</div>
+                        <div style="font-size:10px;color:#999;margin-top:6px;">按确认键继续</div>
+                    </div>
+                `);
+            }
+
+            function updateTransferAmountDisplay() {
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:14px;color:#666;margin-bottom:6px;">请输入转账金额</div>
+                        <div class="amount-display">¥ ${transferAmountInput || '0'}</div>
+                        <div class="amount-unit">元</div>
+                        <div style="font-size:10px;color:#999;margin-top:4px;">按确认键提交</div>
+                    </div>
+                `);
+            }
+
+            function renderTransferAmount() {
+                setLeftLabels(['返回', '', '', '退卡']);
+                setRightLabels(['', '', '', '确认']);
+                updateTransferAmountDisplay();
+            }
+
+            // ============ 渲染各状态 ============
+            function renderCurrentState() {
+                switch (currentState) {
+                    case STATE.WELCOME:
+                        renderWelcome();
+                        break;
+                    case STATE.CARD_INSERTED:
+                        renderCardInserted();
+                        break;
+                    case STATE.MAIN_MENU:
+                        renderMainMenu();
+                        break;
+                    case STATE.WITHDRAW_AMOUNT:
+                        renderWithdrawAmount();
+                        break;
+                    case STATE.WITHDRAW_OTHER:
+                        renderWithdrawOther();
+                        break;
+                    case STATE.WITHDRAW_CONFIRM:
+                        renderWithdrawConfirm();
+                        break;
+                    case STATE.WITHDRAW_PROCESSING:
+                        renderWithdrawProcessing();
+                        break;
+                    case STATE.WITHDRAW_COMPLETE:
+                        renderWithdrawComplete();
+                        break;
+                    case STATE.QUERY:
+                        renderQuery();
+                        break;
+                    case STATE.DEPOSIT:
+                        renderDeposit();
+                        break;
+                    case STATE.DEPOSIT_PROCESSING:
+                        renderDepositProcessing();
+                        break;
+                    case STATE.DEPOSIT_COMPLETE:
+                        renderDepositComplete();
+                        break;
+                    case STATE.TRANSFER_INPUT_ACCOUNT:
+                        renderTransferInputAccount();
+                        break;
+                    case STATE.TRANSFER_INPUT_AMOUNT:
+                        renderTransferAmount();
+                        break;
+                    case STATE.TRANSFER_CONFIRM:
+                        renderTransferConfirm();
+                        break;
+                    case STATE.TRANSFER_COMPLETE:
+                        renderTransferComplete();
+                        break;
+                    case STATE.PHONE_SERVICE:
+                        renderPhoneService();
+                        break;
+                    case STATE.PASSBOOK_APPOINT:
+                        renderPassbookAppoint();
+                        break;
+                    case STATE.UNIT_SCAN:
+                        renderUnitScan();
+                        break;
+                    case STATE.CARD_EJECTING:
+                        renderCardEjecting();
+                        break;
+                }
+            }
+
+            function renderWelcome() {
+                // 第一层：左侧按钮：单位扫码办理、语言；右侧：插卡办理、用手机办理、存折预约取款
+                setLeftLabels(['单位扫码办理', '语言', '', '']);
+                setRightLabels(['插卡办理', '用手机办理', '存折预约取款', '']);
+                setCenterContent(`
+                    <div>
+                        <div class="icon-display">🏦</div>
+                        <div class="main-prompt">欢迎使用工商银行ATM</div>
+                        <div class="sub-prompt">请选择服务方式</div>
+                        <div style="margin-top:14px;font-size:10px;color:#aaa;">左侧按钮：单位扫码 / 语言</div>
+                        <div style="font-size:10px;color:#aaa;">右侧按钮：插卡 / 手机 / 存折预约</div>
+                    </div>
+                `);
+            }
+
+            function renderCardInserted() {
+                setLeftLabels(['', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                inputMode = 'password';
+                updatePasswordDisplay();
+            }
+
+            function renderMainMenu() {
+                // 第二层：左侧按钮：语言、转账汇款、退卡；右侧：查询、取款、存款
+                setLeftLabels(['语言', '转账汇款', '退卡', '']);
+                setRightLabels(['查询', '取款', '存款', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:36px;">👤</div>
+                        <div class="main-prompt">请选择业务</div>
+                        <div class="sub-prompt">欢迎使用工商银行服务</div>
+                        <div style="margin-top:8px;font-size:10px;color:#aaa;">余额：¥${accountBalance.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+
+            function renderWithdrawAmount() {
+                // 第三层：取款金额选择
+                const labels = getCurrentAmountLabels();
+                setLeftLabels(labels.left);
+                setRightLabels(labels.right);
+                selectedAmount = 0;
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:14px;color:#666;margin-bottom:6px;">请选择取款金额</div>
+                        <div style="font-size:30px;font-weight:700;color:#c41230;">¥ ---</div>
+                        <div class="amount-unit">元</div>
+                        <div style="font-size:10px;color:#999;margin-top:6px;">余额：¥${accountBalance.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+
+            function renderWithdrawOther() {
+                setLeftLabels(['返回', '', '', '退卡']);
+                setRightLabels(['', '', '', '确认']);
+                inputMode = 'custom_amount';
+                customAmountInput = '';
+                updateCustomAmountDisplay();
+            }
+
+            function renderWithdrawConfirm() {
+                setLeftLabels(['重新选择', '', '', '退卡']);
+                setRightLabels(['', '', '', '确认取款']);
+                updateCenterForAmountConfirm();
+            }
+
+            function renderWithdrawProcessing() {
+                setLeftLabels(['', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:50px;">💵</div>
+                        <div style="font-size:16px;font-weight:700;color:#333;">正在处理...</div>
+                        <div style="font-size:13px;color:#666;">请稍候，正在出钞</div>
+                        <div class="amount-display" style="font-size:24px;">¥ ${selectedAmount.toLocaleString()}</div>
+                    </div>
+                `);
+                processingLight.style.opacity = '1';
+                processingLight.classList.add('amber');
+                cashSlot.style.boxShadow = '0 0 20px rgba(76,175,80,0.8), inset 0 1px 3px rgba(0,0,0,0.6)';
+                cashSlot.style.background = '#2a4a2a';
+
+                processingTimer = setTimeout(() => {
+                    accountBalance -= selectedAmount;
+                    todayWithdrawn += selectedAmount;
+                    processingLight.style.opacity = '0.3';
+                    processingLight.classList.remove('amber');
+                    cashSlot.style.boxShadow = 'inset 0 1px 3px rgba(0,0,0,0.8)';
+                    cashSlot.style.background = '#1a1a1a';
+                    processingTimer = null;
+                    goToState(STATE.WITHDRAW_COMPLETE);
+                }, 3000);
+            }
+
+            function renderWithdrawComplete() {
+                setLeftLabels(['', '', '退卡', '']);
+                setRightLabels(['打印凭条', '继续取款', '返回菜单', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:44px;">✅</div>
+                        <div style="font-size:16px;font-weight:700;color:#2e8b57;">取款成功</div>
+                        <div style="font-size:13px;color:#666;">请取走您的现金</div>
+                        <div class="amount-display" style="font-size:22px;">¥ ${selectedAmount.toLocaleString()}</div>
+                        <div style="font-size:10px;color:#999;margin-top:4px;">余额：¥${accountBalance.toLocaleString()}</div>
+                    </div>
+                `);
+                // 重写此状态下的按钮处理
+                const origLeft = handleLeftButton;
+                const origRight = handleRightButton;
+                // 使用标志来处理
+                currentState = STATE.WITHDRAW_COMPLETE;
+            }
+
+            function renderQuery() {
+                setLeftLabels(['', '', '', '返回菜单']);
+                setRightLabels(['返回菜单', '', '', '退卡']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:36px;">📋</div>
+                        <div style="font-size:15px;font-weight:700;color:#333;">账户余额</div>
+                        <div class="amount-display" style="font-size:32px;">¥ ${accountBalance.toLocaleString()}</div>
+                        <div class="amount-unit">元</div>
+                        <div style="font-size:10px;color:#999;margin-top:6px;">今日已取：¥${todayWithdrawn.toLocaleString()}</div>
+                        <div style="font-size:10px;color:#999;">日限额：¥${dailyWithdrawLimit.toLocaleString()}</div>
+                    </div>
+                `);
+            }
+
+            function renderDeposit() {
+                setLeftLabels(['', '', '', '返回菜单']);
+                setRightLabels(['确认存款', '', '', '退卡']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:40px;">💰</div>
+                        <div style="font-size:15px;font-weight:700;color:#333;">请放入钞票</div>
+                        <div style="font-size:12px;color:#666;">将钞票整齐放入入钞口</div>
+                        <div style="font-size:10px;color:#999;margin-top:4px;">支持100元面额人民币</div>
+                        <div style="font-size:10px;color:#999;">放入后请按确认存款</div>
+                    </div>
+                `);
+            }
+
+            function renderDepositProcessing() {
+                setLeftLabels(['', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:50px;">🔄</div>
+                        <div style="font-size:16px;font-weight:700;color:#333;">正在清点...</div>
+                        <div style="font-size:12px;color:#666;">请稍候</div>
+                    </div>
+                `);
+                processingLight.style.opacity = '1';
+                processingLight.classList.add('amber');
+                processingTimer = setTimeout(() => {
+                    const depositAmt = Math.floor(Math.random() * 5000) + 1000;
+                    accountBalance += depositAmt;
+                    processingLight.style.opacity = '0.3';
+                    processingLight.classList.remove('amber');
+                    processingTimer = null;
+                    currentState = STATE.DEPOSIT_COMPLETE;
+                    renderDepositComplete(depositAmt);
+                }, 2500);
+            }
+
+            function renderDepositComplete(depositAmt) {
+                if (!depositAmt) depositAmt = 1500;
+                setLeftLabels(['', '', '退卡', '']);
+                setRightLabels(['打印凭条', '继续存款', '返回菜单', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:44px;">✅</div>
+                        <div style="font-size:16px;font-weight:700;color:#2e8b57;">存款成功</div>
+                        <div style="font-size:13px;color:#666;">已存入</div>
+                        <div class="amount-display" style="font-size:22px;">¥ ${depositAmt.toLocaleString()}</div>
+                        <div style="font-size:10px;color:#999;margin-top:4px;">余额：¥${accountBalance.toLocaleString()}</div>
+                    </div>
+                `);
+                currentState = STATE.DEPOSIT_COMPLETE;
+            }
+
+            function renderTransferInputAccount() {
+                setLeftLabels(['返回', '', '', '退卡']);
+                setRightLabels(['', '', '', '确认']);
+                inputMode = 'transfer_account';
+                transferAccountInput = '';
+                transferAmountInput = '';
+                updateTransferAccountDisplay();
+            }
+
+            function renderTransferConfirm() {
+                const amt = parseFloat(transferAmountInput || '0');
+                const maskedAccount = transferAccountInput.replace(/(\d{4})/g, '$1 ').trim();
+                setLeftLabels(['重新输入', '', '', '退卡']);
+                setRightLabels(['', '', '', '确认转账']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:14px;font-weight:700;color:#333;">确认转账信息</div>
+                        <div style="font-size:11px;color:#666;margin-top:6px;">对方账号</div>
+                        <div style="font-size:14px;font-weight:600;color:#1a5fb4;font-family:'Courier New',monospace;">${maskedAccount || '****'}</div>
+                        <div style="font-size:11px;color:#666;margin-top:6px;">转账金额</div>
+                        <div class="amount-display" style="font-size:28px;">¥ ${amt.toLocaleString()}</div>
+                        <div style="font-size:10px;color:#999;">按右侧确认键提交</div>
+                    </div>
+                `);
+            }
+
+            function renderTransferComplete() {
+                const amt = parseFloat(transferAmountInput || '0');
+                accountBalance -= amt;
+                setLeftLabels(['', '', '退卡', '']);
+                setRightLabels(['打印凭条', '继续转账', '返回菜单', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:44px;">✅</div>
+                        <div style="font-size:16px;font-weight:700;color:#2e8b57;">转账成功</div>
+                        <div style="font-size:12px;color:#666;">金额：¥${amt.toLocaleString()}</div>
+                        <div style="font-size:10px;color:#999;margin-top:4px;">余额：¥${accountBalance.toLocaleString()}</div>
+                    </div>
+                `);
+                transferAccountInput = '';
+                transferAmountInput = '';
+                currentState = STATE.TRANSFER_COMPLETE;
+            }
+
+            function renderPhoneService() {
+                setLeftLabels(['返回', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:44px;">📱</div>
+                        <div style="font-size:15px;font-weight:700;color:#333;">手机扫码办理</div>
+                        <div style="font-size:12px;color:#666;margin-top:6px;">请打开工商银行手机APP</div>
+                        <div style="font-size:12px;color:#666;">扫描ATM屏幕二维码</div>
+                        <div style="margin-top:10px;padding:12px 20px;background:#fff;border:2px dashed #c41230;border-radius:8px;display:inline-block;">
+                            <div style="font-size:10px;color:#c41230;">[ 模拟二维码 ]</div>
+                            <div style="font-size:28px;letter-spacing:4px;">▮▮▮▮▮▮▮</div>
+                        </div>
+                        <div style="font-size:10px;color:#999;margin-top:6px;">按左侧返回键回到首页</div>
+                    </div>
+                `);
+            }
+
+            function renderPassbookAppoint() {
+                setLeftLabels(['返回', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:40px;">📖</div>
+                        <div style="font-size:15px;font-weight:700;color:#333;">存折预约取款</div>
+                        <div style="font-size:12px;color:#666;margin-top:6px;">预约成功后，请携带存折</div>
+                        <div style="font-size:12px;color:#666;">至柜台办理取款业务</div>
+                        <div class="info-banner" style="margin-top:10px;">预约码将通过短信发送至您的手机</div>
+                        <div style="font-size:10px;color:#999;margin-top:6px;">按左侧返回键回到首页</div>
+                    </div>
+                `);
+            }
+
+            function renderUnitScan() {
+                setLeftLabels(['返回', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:40px;">🏢</div>
+                        <div style="font-size:15px;font-weight:700;color:#333;">单位扫码办理</div>
+                        <div style="font-size:12px;color:#666;margin-top:6px;">请出示单位业务二维码</div>
+                        <div style="font-size:12px;color:#666;">对准扫描区域</div>
+                        <div style="margin-top:10px;font-size:36px;">📷</div>
+                        <div style="font-size:10px;color:#999;">按左侧返回键回到首页</div>
+                    </div>
+                `);
+            }
+
+            function renderCardEjecting() {
+                setLeftLabels(['', '', '', '']);
+                setRightLabels(['', '', '', '']);
+                setCenterContent(`
+                    <div>
+                        <div style="font-size:44px;">💳</div>
+                        <div style="font-size:16px;font-weight:700;color:#d4a017;">正在退卡...</div>
+                        <div style="font-size:13px;color:#666;">请取走您的银行卡</div>
+                        <div style="font-size:10px;color:#999;margin-top:4px;">点击插卡口模拟取卡</div>
+                    </div>
+                `);
+            }
+
+            // ============ 初始化 ============
+            function init() {
+                renderWelcome();
+                // 初始状态所有物理按钮启用对应的
+                updatePhysicalButtons('left', ['单位扫码办理', '语言', '', '']);
+                updatePhysicalButtons('right', ['插卡办理', '用手机办理', '存折预约取款', '']);
+                processingLight.style.opacity = '0.3';
+            }
+
+            // 处理特殊状态下的按钮（完成状态需要特殊处理）
+            const originalHandleLeft = handleLeftButton;
+            const originalHandleRight = handleRightButton;
+
+            // 覆盖处理以支持完成状态
+            handleLeftButton = function(index) {
+                if (currentState === STATE.WITHDRAW_COMPLETE) {
+                    if (index === 2) ejectCard();
+                    return;
+                }
+                if (currentState === STATE.DEPOSIT_COMPLETE) {
+                    if (index === 2) ejectCard();
+                    return;
+                }
+                if (currentState === STATE.TRANSFER_COMPLETE) {
+                    if (index === 2) ejectCard();
+                    return;
+                }
+                if (currentState === STATE.PHONE_SERVICE || currentState === STATE.PASSBOOK_APPOINT ||
+                    currentState === STATE.UNIT_SCAN) {
+                    if (index === 0) resetToWelcome();
+                    return;
+                }
+                originalHandleLeft(index);
+            };
+
+            handleRightButton = function(index) {
+                if (currentState === STATE.WITHDRAW_COMPLETE) {
+                    if (index === 0) flashMessage('凭条已打印');
+                    if (index === 1) goToState(STATE.WITHDRAW_AMOUNT);
+                    if (index === 2) goToState(STATE.MAIN_MENU);
+                    return;
+                }
+                if (currentState === STATE.DEPOSIT_COMPLETE) {
+                    if (index === 0) flashMessage('凭条已打印');
+                    if (index === 1) goToState(STATE.DEPOSIT);
+                    if (index === 2) goToState(STATE.MAIN_MENU);
+                    return;
+                }
+                if (currentState === STATE.TRANSFER_COMPLETE) {
+                    if (index === 0) flashMessage('凭条已打印');
+                    if (index === 1) goToState(STATE.TRANSFER_INPUT_ACCOUNT);
+                    if (index === 2) goToState(STATE.MAIN_MENU);
+                    return;
+                }
+                originalHandleRight(index);
+            };
+
+            init();
+
+            console.log('🏦 ICBC ATM 模拟系统已就绪');
+            console.log('  第一层：单位扫码办理 | 语言  |  插卡办理 | 用手机办理 | 存折预约取款');
+            console.log('  第二层：语言 | 转账汇款 | 退卡  |  查询 | 取款 | 存款');
+            console.log('  第三层：100/200/500/返回  |  1000/2000/其他金额/确认');
+            console.log('  点击屏幕标签或左右物理按钮均可操作');
+            console.log('  初始余额：¥' + accountBalance.toLocaleString());
+            console.log('  每日取款限额：¥' + dailyWithdrawLimit.toLocaleString());
+        })();
+    </script>
+</body>
+</html>
